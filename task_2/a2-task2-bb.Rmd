@@ -1,0 +1,106 @@
+---
+title: 'Task 2: Palmetto'
+author: "Bri Baker"
+date: "2/1/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(GGally)
+library(broom)
+```
+
+## Introduction
+
+use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species *Serenoa repens* (1) or *Sabal etonia* (2).
+
+
+```{r data}
+
+#could use col_types() if were using treatment
+
+palmetto <- read_csv(here("task_2/palmetto.csv")) %>% 
+  mutate(species_name = if_else(species == 1, "Serenoa repens", "Sabal etonia"),
+         species_name = factor(species_name)) %>% 
+  select(species, species_name, height:green_lvs)
+
+```
+
+
+## Species Comparison
+
+```{r ggpairs, echo=FALSE}
+
+ggpairs(palmetto, aes(color = species_name))
+
+```
+
+```{r green leaves}
+
+ggplot(data = palmetto_nona, aes(x = length, y = green_lvs)) +
+  geom_point(aes(color = species_name))
+
+```
+
+
+```{r height}
+
+ggplot(data = palmetto, aes(x = species_name, y = height)) +
+  geom_boxplot()
+
+```
+
+
+## Binary Logistic Regression
+
+```{r}
+palmetto_blr <- glm(species_name ~ height + length + width + green_lvs, # run binomial regression
+                    data = palmetto,
+                    family = "binomial")
+
+palmetto_summary <- broom::tidy(palmetto_blr) # make table of coefficients etc
+
+palmetto_summary
+```
+
+
+
+## Model Success Assessment
+
+```{r}
+palmetto_fitted <- palmetto_blr %>% 
+  broom::augment(type.predict = "response") %>% 
+  mutate(classified = case_when(
+    .fitted < 0.5 ~ "Sabal etonia",
+    .fitted >= 0.5 ~ "Serenoa repens"
+  ),
+  correct =case_when(
+    species_name == classified ~ "Yes",
+    species_name != classified ~ "No"
+  ))
+
+summary_fit <- palmetto_fitted %>% 
+  count(species_name, correct) %>% 
+  select(species_name, correct, n) %>% 
+  pivot_wider(names_from = correct,
+              values_from = n) %>% 
+  mutate(percent_correct = round(Yes/(No + Yes) * 100, 2)
+  )
+
+
+
+```
+
+
+
+## Citation
+
+Data source: Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
