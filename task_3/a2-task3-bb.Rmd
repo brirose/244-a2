@@ -7,15 +7,74 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(countrycode)
+library(wesanderson)
+```
+
+learned country to continent with `countrycode::countryname()`
+When I saw there were a lot of NA continent values I learned to filter na values using `filter(is.na(continent))` to find out what country value they had (EMPTY)
+refresh on logicals in `case_when()`
+
+```{r data}
+tuesdata <- tidytuesdayR::tt_load('2021-01-26')
+
+plastics <- tuesdata$plastics %>% 
+  mutate(
+    continent = countrycode::countryname(country, "continent")
+  )
 
 
 ```
 
 
-```{r data}
-tuesdata <- tidytuesdayR::tt_load('2021-01-26')
+```{r prep dataset}
 
-plastics <- tuesdata$plastics
+types_plastic <- plastics %>% 
+  pivot_longer(
+    cols = empty:pvc,
+    names_to = "type",
+    values_to = "qty"
+  ) %>% 
+  group_by(year, continent, type) %>% 
+  summarise(count = sum(qty, na.rm = T)) %>% 
+  mutate(
+    continent = replace_na(continent, "Undefined") %>% as.factor(),
+    year = factor(year),
+    type = case_when(
+      type == "empty" ~ "Not Classified",
+      type == "o" ~ "Other",
+      TRUE ~ str_to_upper(type)
+    )
+  )
 
+na_continent <- plastics %>% 
+  filter(is.na(continent))
+```
+```{r make polar plot}
+ggplot(data = types_plastic, aes(x = type, 
+                                 y = count, 
+                                 fill = type, 
+                                 color = type))+
+  geom_col(width = 0.2) +
+  coord_polar()+
+  scale_y_log10() +
+  facet_grid(year ~ continent, shrink = TRUE, drop = TRUE) +
+    labs(
+    title = "Global plastic pollutant profiles by type of plastic",
+    caption = "2 Feb 2021 #TidyTuesday dataset | Bri Baker \n// inspired by @jmcastagnetto, Jesus M. Castagnetto",
+    x = "",
+    y = "",
+    color = "Plastic type",
+    fill = "Plastic type"
+  ) +
+  scale_color_brewer(palette = "Set2", type = "qual") +
+  scale_fill_brewer(palette = "Set2", type = "qual") +
+  theme_minimal()+
+   theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+      )
+  
 ```
 

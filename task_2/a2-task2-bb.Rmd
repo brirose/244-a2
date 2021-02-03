@@ -20,38 +20,43 @@ library(broom)
 
 ## Introduction
 
-use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species *Serenoa repens* (1) or *Sabal etonia* (2).
+use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species *Serenoa repens* or *Sabal etonia*.
+
+remember to make a note about the years
 
 
 ```{r data}
 
 #could use col_types() if were using treatment
 
-palmetto <- read_csv(here("task_2/palmetto.csv")) %>% 
-  mutate(species_name = if_else(species == 1, "Serenoa repens", "Sabal etonia"),
-         species_name = factor(species_name)) %>% 
-  select(species, species_name, height:green_lvs)
+palmetto <- read_csv(here("task_2/palmetto.csv")) %>% # import data
+  mutate(species_name = if_else(species == 1, "Serenoa repens", "Sabal etonia"), # add species names
+         species_name = factor(species_name)) %>% # make names into factor for blm
+  select(species, species_name, height:green_lvs) # select relevant columns
 
 ```
 
 
 ## Species Comparison
 
-```{r ggpairs, echo=FALSE}
+```{r ggpairs}
 
-ggpairs(palmetto, aes(color = species_name))
+ggpairs(palmetto, aes(color = species_name)) # make ggpairs plot to generally visualize
 
 ```
 
-```{r green leaves}
+```{r green leaves, fig.cap= "words here"}
 
-ggplot(data = palmetto_nona, aes(x = length, y = green_lvs)) +
+# length vs leaves scatterplot
+
+ggplot(data = palmetto, aes(x = length, y = green_lvs)) +
   geom_point(aes(color = species_name))
 
 ```
 
 
 ```{r height}
+# boxplot of height by species
 
 ggplot(data = palmetto, aes(x = species_name, y = height)) +
   geom_boxplot()
@@ -76,23 +81,22 @@ palmetto_summary
 ## Model Success Assessment
 
 ```{r}
-palmetto_fitted <- palmetto_blr %>% 
-  broom::augment(type.predict = "response") %>% 
-  mutate(classified = case_when(
+palmetto_fitted <- palmetto_blr %>% # use blr results
+  broom::augment(type.predict = "response") %>% # make a table
+  mutate(classified = case_when( # classify species based on results of blm
     .fitted < 0.5 ~ "Sabal etonia",
     .fitted >= 0.5 ~ "Serenoa repens"
   ),
-  correct =case_when(
+  correct =case_when( # identify where species is correctly classified
     species_name == classified ~ "Yes",
     species_name != classified ~ "No"
   ))
 
-summary_fit <- palmetto_fitted %>% 
-  count(species_name, correct) %>% 
-  select(species_name, correct, n) %>% 
-  pivot_wider(names_from = correct,
-              values_from = n) %>% 
-  mutate(percent_correct = round(Yes/(No + Yes) * 100, 2)
+summary_fit <- palmetto_fitted %>% # make summary graph
+  count(species_name, correct) %>% # count correct/incorrect classification
+  pivot_wider(names_from = correct, # switch organization
+              values_from = n) %>% # with counts as values
+  mutate(percent_correct = round(Yes/(No + Yes) * 100, 2) # calculate % correct
   )
 
 
