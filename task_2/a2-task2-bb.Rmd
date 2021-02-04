@@ -16,13 +16,14 @@ library(here)
 library(janitor)
 library(GGally)
 library(broom)
+library(kableExtra)
 ```
 
 ## Introduction
 
-use binary logistic regression to test feasibility of using variables plant height (height), canopy length (length), canopy width (width), and number of green leaves (green_lvs) to classify whether a palmetto is species *Serenoa repens* or *Sabal etonia*.
+Herein I utilize binary logistic regression to test the feasibility of using observations about individuals to differentiate between two palmetto species: *Serenoa repens* and *Sabal etonia*.
 
-remember to make a note about the years
+The variables utilized are plant height, canopy length, canopy width, and number of green leaves, and each annual observation is treated as an individual. Data were collected at Archbold Biological Station in south-central Florida from 1981 - 2017 at 5-year intervals (Abrahamson, 2019).
 
 
 ```{r data}
@@ -39,29 +40,49 @@ palmetto <- read_csv(here("task_2/palmetto.csv")) %>% # import data
 
 ## Species Comparison
 
-```{r ggpairs}
-
-ggpairs(palmetto, aes(color = species_name)) # make ggpairs plot to generally visualize
-
-```
-
-```{r green leaves, fig.cap= "words here"}
+```{r green leaves, fig.cap= "**Figure 1.** Canopy length (cm) and green leaf count for *Sabal etonia* and *Serenoa repens*."}
 
 # length vs leaves scatterplot
 
 ggplot(data = palmetto, aes(x = length, y = green_lvs)) +
-  geom_point(aes(color = species_name))
+  geom_point(aes(color = species_name)) + 
+  labs( x = "Canopy length (cm)",
+        y = "Green Leaf Count",
+        color = "Species",
+        caption = "Bri Baker, 2021\nSource: Abrahamson, 2019") +
+  scale_color_manual(labels = c("*Sabal etonia*" , "*Serenoa repens*"), # change legend names
+                     values = c("goldenrod1", "cornflowerblue")) +
+  theme_minimal() + # use theme_minimal
+  theme(legend.text = ggtext::element_markdown(),
+        legend.position = c(0.14, 0.86), # move legend
+        legend.background = element_rect(fill="white", # format legend
+                                         linetype = "solid", 
+                                         color = "whitesmoke"))
 
 ```
 
+Both species exhibit a positive correlation between canopy length and number of green leaves with *Serenoa repens* generally having more leaves at a given canopy length.
 
-```{r height}
+
+```{r height, fig.cap= "**Figure 2.** Comparison of canopy height (cm) of *Sabal etonia* and *Serenoa repens*."}
+
 # boxplot of height by species
 
 ggplot(data = palmetto, aes(x = species_name, y = height)) +
-  geom_boxplot()
+  geom_boxplot(aes(fill = species_name))+
+  labs( x = "",
+        y = "Canopy height (cm)",
+        fill = "Species",
+        caption = "Bri Baker, 2021\nSource: Abrahamson, 2019") +
+  scale_fill_manual(labels = c("*Sabal etonia*" , "*Serenoa repens*"), # change legend names
+                     values = c("goldenrod1", "cornflowerblue")) +
+  theme_minimal() + # use theme_minimal
+  theme(axis.text.x = element_text(face = "italic"),
+        legend.position = "none") # remove legend
 
 ```
+
+*Sabal etonia* and *Serenoa repens* are similar in canopy height although *Serenoa repens* is slightly larger on average with a wider spread in observed values. 
 
 
 ## Binary Logistic Regression
@@ -71,9 +92,13 @@ palmetto_blr <- glm(species_name ~ height + length + width + green_lvs, # run bi
                     data = palmetto,
                     family = "binomial")
 
-palmetto_summary <- broom::tidy(palmetto_blr) # make table of coefficients etc
+palmetto_summary <- broom::tidy(palmetto_blr) # make table of outputs
 
-palmetto_summary
+kable(palmetto_summary, # make table
+      caption = "Table 1: Summary statistics for palmetto species binomial logistic regression",
+      col.names = c("Term", "Coefficient", "Standard error", "z value", "p value")) %>% 
+  kable_paper(full_width = FALSE) # customize
+
 ```
 
 
@@ -96,10 +121,12 @@ summary_fit <- palmetto_fitted %>% # make summary graph
   count(species_name, correct) %>% # count correct/incorrect classification
   pivot_wider(names_from = correct, # switch organization
               values_from = n) %>% # with counts as values
-  mutate(percent_correct = round(Yes/(No + Yes) * 100, 2) # calculate % correct
-  )
+  mutate(percent_correct = round(Yes/(No + Yes) * 100, 2)) # calculate % correct
 
-
+kable(summary_fit, # make table
+      caption = "Table 2: Summary of palmetto species binomial logistic regression classification success",
+      col.names = c("Species", "Incorrect", "Correct", "Percent Correct (%)")) %>% 
+  kable_paper(full_width = FALSE) # customize
 
 ```
 
@@ -107,4 +134,4 @@ summary_fit <- palmetto_fitted %>% # make summary graph
 
 ## Citation
 
-Data source: Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
+Data source: Abrahamson, W.G. 2019. *Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1.* Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
