@@ -92,7 +92,8 @@ palmetto_blr <- glm(species_name ~ height + length + width + green_lvs, # run bi
                     data = palmetto,
                     family = "binomial")
 
-palmetto_summary <- broom::tidy(palmetto_blr) # make table of outputs
+palmetto_summary <- broom::tidy(palmetto_blr) %>% 
+  mutate(p.value = case_when(p.value < 0.5 ~ "< 0.005"))# make table of outputs
 
 kable(palmetto_summary, # make table
       caption = "Table 1: Summary statistics for palmetto species binomial logistic regression",
@@ -112,7 +113,7 @@ palmetto_fitted <- palmetto_blr %>% # use blr results
     .fitted < 0.5 ~ "Sabal etonia",
     .fitted >= 0.5 ~ "Serenoa repens"
   ),
-  correct =case_when( # identify where species is correctly classified
+  correct = case_when( # identify where species is correctly classified
     species_name == classified ~ "Yes",
     species_name != classified ~ "No"
   ))

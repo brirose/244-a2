@@ -272,7 +272,8 @@ ggplot(data = palmetto, aes(x = species_name, y = height)) +
                     data = palmetto,
                     family = &quot;binomial&quot;)
 
-palmetto_summary &lt;- broom::tidy(palmetto_blr) # make table of outputs
+palmetto_summary &lt;- broom::tidy(palmetto_blr) %&gt;% 
+  mutate(p.value = case_when(p.value &lt; 0.5 ~ &quot;&lt; 0.005&quot;))# make table of outputs
 
 kable(palmetto_summary, # make table
       caption = &quot;Table 1: Summary statistics for palmetto species binomial logistic regression&quot;,
@@ -296,7 +297,7 @@ Standard error
 <th style="text-align:right;">
 z value
 </th>
-<th style="text-align:right;">
+<th style="text-align:left;">
 p value
 </th>
 </tr>
@@ -315,8 +316,8 @@ p value
 <td style="text-align:right;">
 -22.71180
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+&lt; 0.005
 </td>
 </tr>
 <tr>
@@ -332,8 +333,8 @@ height
 <td style="text-align:right;">
 12.66984
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+&lt; 0.005
 </td>
 </tr>
 <tr>
@@ -349,8 +350,8 @@ length
 <td style="text-align:right;">
 -24.55600
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+&lt; 0.005
 </td>
 </tr>
 <tr>
@@ -366,8 +367,8 @@ width
 <td style="text-align:right;">
 -18.78227
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+&lt; 0.005
 </td>
 </tr>
 <tr>
@@ -383,8 +384,8 @@ green_lvs
 <td style="text-align:right;">
 49.10728
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+&lt; 0.005
 </td>
 </tr>
 </tbody>
@@ -398,7 +399,7 @@ green_lvs
     .fitted &lt; 0.5 ~ &quot;Sabal etonia&quot;,
     .fitted &gt;= 0.5 ~ &quot;Serenoa repens&quot;
   ),
-  correct =case_when( # identify where species is correctly classified
+  correct = case_when( # identify where species is correctly classified
     species_name == classified ~ &quot;Yes&quot;,
     species_name != classified ~ &quot;No&quot;
   ))
